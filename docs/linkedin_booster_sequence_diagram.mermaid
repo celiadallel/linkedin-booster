@@ -1,0 +1,105 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant AuthService
+    participant PostService
+    participant CommentGenerator
+    participant LinkedInService
+    participant CommunityService
+    participant AnalyticsService
+    participant DB as Database
+
+    %% Initialization and Authentication Flow
+    User->>Frontend: Accède à l'application
+    Frontend->>AuthService: Vérifier la session
+    AuthService->>DB: Valider token utilisateur
+    DB-->>AuthService: Retourner données utilisateur
+    AuthService-->>Frontend: Session authentifiée/non authentifiée
+    
+    alt Non authentifié
+        Frontend->>Frontend: Afficher page de connexion
+        User->>Frontend: Soumet identifiants
+        Frontend->>AuthService: login(email, password)
+        AuthService->>DB: Vérifier identifiants
+        AuthService->>AuthService: Générer JWT
+        AuthService-->>Frontend: Retourner token
+        Frontend->>Frontend: Sauvegarder token et rediriger
+    end
+
+    %% Add Post Flow
+    User->>Frontend: Cliquer "Ajouter un post"
+    Frontend->>Frontend: Afficher formulaire d'ajout de post
+    User->>Frontend: Soumet URL du post LinkedIn
+    Frontend->>PostService: extractPostContent(postUrl)
+    PostService->>LinkedInService: validatePostUrl(url)
+    LinkedInService-->>PostService: URL validée
+    PostService->>PostService: Extraire le contenu du post
+    PostService-->>Frontend: Retourner le contenu du post
+    Frontend->>Frontend: Afficher le contenu et demander confirmation
+    User->>Frontend: Confirmer le contenu
+    Frontend->>CommentGenerator: generateComments(postContent)
+    
+    %% Comment Generation Flow
+    CommentGenerator->>CommentGenerator: createPrompt(postContent, persona1)
+    CommentGenerator->>CommentGenerator: createPrompt(postContent, persona2)
+    CommentGenerator->>CommentGenerator: createPrompt(postContent, persona3)
+    CommentGenerator->>CommentGenerator: Appeler API OpenAI
+    CommentGenerator->>CommentGenerator: filterInappropriateContent(comments)
+    CommentGenerator-->>Frontend: Retourner 3 commentaires
+    Frontend->>Frontend: Afficher les commentaires générés
+    
+    %% Comment Selection Flow
+    User->>Frontend: Sélectionner un commentaire
+    Frontend->>PostService: savePost(postUrl, content, comments, selectedComment)
+    PostService->>DB: Enregistrer post et commentaires
+    DB-->>PostService: Confirmation
+    PostService-->>Frontend: Post enregistré
+    
+    %% Comment Posting Flow
+    User->>Frontend: Cliquer "Booster maintenant"
+    Frontend->>LinkedInService: formatCommentForPosting(comment)
+    LinkedInService-->>Frontend: Commentaire formaté
+    Frontend->>Frontend: Copier le commentaire dans le presse-papiers
+    Frontend-->>User: Indiquer que le commentaire est prêt à coller
+    
+    %% Analytics Update Flow
+    Frontend->>AnalyticsService: trackEvent(userId, "comment_generated")
+    AnalyticsService->>DB: Mettre à jour les statistiques
+    
+    %% Explore Posts Flow
+    User->>Frontend: Cliquer "Explorer des posts"
+    Frontend->>PostService: getRecommendedPosts(userId)
+    PostService->>LinkedInService: getNetworkActivity(userId)
+    LinkedInService-->>PostService: Liste d'activités réseau
+    PostService->>DB: Récupérer historique des posts
+    DB-->>PostService: Historique des posts
+    PostService->>PostService: Filtrer et trier les posts
+    PostService-->>Frontend: Liste de posts recommandés
+    Frontend->>Frontend: Afficher les posts recommandés
+    
+    %% Community Management Flow
+    User->>Frontend: Cliquer "Voir ma communauté"
+    Frontend->>CommunityService: getContacts(userId)
+    CommunityService->>DB: Récupérer contacts
+    DB-->>CommunityService: Liste de contacts
+    CommunityService->>CommunityService: calculateEngagementMetrics(userId)
+    CommunityService->>CommunityService: suggestReengagement(userId)
+    CommunityService-->>Frontend: Données de la communauté
+    Frontend->>Frontend: Afficher tableau de bord communauté
+    
+    %% Reengagement Flow
+    User->>Frontend: Cliquer "Relancer discussion"
+    Frontend->>CommunityService: getPriorityContacts(userId)
+    CommunityService->>DB: Récupérer contacts prioritaires
+    DB-->>CommunityService: Contacts prioritaires
+    CommunityService-->>Frontend: Liste de contacts à relancer
+    Frontend->>Frontend: Afficher suggestions de réengagement
+    
+    %% Dashboard Update Flow
+    User->>Frontend: Accéder au tableau de bord
+    Frontend->>AnalyticsService: generateDashboardData(userId)
+    AnalyticsService->>DB: Récupérer données d'analyse
+    DB-->>AnalyticsService: Statistiques d'utilisation
+    AnalyticsService->>AnalyticsService: Calculer métriques et tendances
+    AnalyticsService-->>Frontend: Données pour le tableau de bord
+    Frontend->>Frontend: Afficher statistiques et graphiques

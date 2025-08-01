@@ -1,0 +1,422 @@
+{
+  "projectName": "LinkedIn Community Booster - AI Edition",
+  "version": "1.0.0",
+  "lastUpdated": "2025-07-31",
+  "author": "Bob, System Architect",
+  
+  "overview": {
+    "description": "Application permettant de générer des commentaires IA personnalisés pour les publications LinkedIn afin d'augmenter l'engagement professionnel des utilisateurs",
+    "keyFeatures": [
+      "Génération de commentaires IA avec différents personas",
+      "Gestion des publications LinkedIn et suivi d'engagement",
+      "Tableau de bord d'analytics personnalisé",
+      "Gestion de communauté professionnelle"
+    ],
+    "targetUsers": [
+      "Professionnels actifs sur LinkedIn",
+      "Responsables marketing d'entreprises",
+      "Entrepreneurs en recherche de partenariats",
+      "Demandeurs d'emploi",
+      "Experts souhaitant renforcer leur personal branding"
+    ]
+  },
+  
+  "architecture": {
+    "pattern": "Microservices avec API Gateway",
+    "components": {
+      "frontend": {
+        "framework": "React",
+        "language": "TypeScript",
+        "styling": "Tailwind CSS",
+        "componentLibrary": "Shadcn UI",
+        "stateManagement": "Redux",
+        "apiCommunication": "React Query",
+        "modules": [
+          "Authentication Module",
+          "Dashboard Module",
+          "Post Management Module",
+          "Comment Generation Module",
+          "Community Management Module",
+          "Analytics Module"
+        ]
+      },
+      "backend": {
+        "framework": "Node.js / Express",
+        "language": "TypeScript",
+        "orm": "Prisma",
+        "authentication": "JWT",
+        "services": [
+          {
+            "name": "Auth Service",
+            "description": "Gestion de l'authentification et des utilisateurs",
+            "endpoints": ["/auth/*"],
+            "responsibilities": ["Inscription", "Connexion", "Gestion des tokens", "Sécurité"]
+          },
+          {
+            "name": "Post Service",
+            "description": "Gestion des publications LinkedIn",
+            "endpoints": ["/posts/*"],
+            "responsibilities": ["Stockage des posts", "Extraction de contenu", "Gestion des commentaires"]
+          },
+          {
+            "name": "AI Comment Service",
+            "description": "Génération de commentaires via IA",
+            "endpoints": ["/posts/*/comments/generate"],
+            "responsibilities": ["Interfaçage avec OpenAI", "Génération de prompts", "Filtrage de contenu"]
+          },
+          {
+            "name": "Community Service",
+            "description": "Gestion des contacts professionnels",
+            "endpoints": ["/community/*"],
+            "responsibilities": ["Tracking des relations", "Suggestions d'engagement", "Scoring des contacts"]
+          },
+          {
+            "name": "Analytics Service",
+            "description": "Collecte et analyse de métriques",
+            "endpoints": ["/analytics/*"],
+            "responsibilities": ["Agrégation de métriques", "Génération de rapports", "Suivi de tendances"]
+          },
+          {
+            "name": "Explorer Service",
+            "description": "Recherche et suggestion de posts pertinents",
+            "endpoints": ["/explorer/*"],
+            "responsibilities": ["Découverte de contenu", "Scoring de relevance", "Filtrage"]
+          }
+        ]
+      },
+      "database": {
+        "primary": {
+          "type": "PostgreSQL",
+          "version": "14.x",
+          "purpose": "Stockage relationnel principal",
+          "schemas": ["public"],
+          "tables": ["Users", "Posts", "Agents", "Community", "Analytics"]
+        },
+        "cache": {
+          "type": "Redis",
+          "version": "6.x",
+          "purpose": "Cache et files d'attente",
+          "keySpaces": ["sessions", "postCache", "commentQueue", "analyticsCache"]
+        }
+      },
+      "externalServices": {
+        "openai": {
+          "description": "Service d'IA pour la génération de commentaires",
+          "api": "GPT-4/3.5",
+          "usagePattern": "API REST avec authentification par clé"
+        }
+      },
+      "infrastructure": {
+        "deployment": "Docker",
+        "scaling": "Horizontal avec Kubernetes",
+        "webServer": "Nginx",
+        "security": "HTTPS avec Let's Encrypt",
+        "monitoring": "Prometheus / Grafana"
+      }
+    },
+    
+    "dataFlow": {
+      "commentGeneration": [
+        "Utilisateur soumet URL LinkedIn → Frontend",
+        "Frontend → Post Service: Extraction du contenu",
+        "Post Service → DB: Enregistrement du post",
+        "Frontend → AI Comment Service: Demande de génération",
+        "AI Comment Service → OpenAI API: Prompt avec contexte",
+        "OpenAI API → AI Comment Service: Commentaires générés",
+        "AI Comment Service → Frontend: Affichage des commentaires",
+        "Utilisateur sélectionne un commentaire → Frontend",
+        "Frontend → Post Service: Enregistrement du choix",
+        "Analytics Service: Mise à jour des métriques"
+      ],
+      "communityManagement": [
+        "Community Service → DB: Extraction des contacts",
+        "Community Service: Calcul des scores d'engagement",
+        "Community Service → Frontend: Affichage des contacts prioritaires",
+        "Utilisateur interagit avec un contact → Frontend",
+        "Frontend → Community Service: Mise à jour de l'interaction",
+        "Analytics Service: Mise à jour des métriques relationnelles"
+      ],
+      "analytics": [
+        "Utilisateur actions → Analytics Service: Enregistrement événements",
+        "Analytics Service → DB: Stockage des métriques brutes",
+        "Analytics Service: Agrégation et calcul de tendances",
+        "Analytics Service → Frontend: Affichage tableaux de bord"
+      ]
+    }
+  },
+  
+  "databaseSchema": {
+    "Users": {
+      "fields": [
+        {"name": "id", "type": "UUID", "primaryKey": true, "description": "Identifiant unique de l'utilisateur"},
+        {"name": "email", "type": "VARCHAR(255)", "unique": true, "description": "Email de l'utilisateur"},
+        {"name": "password_hash", "type": "VARCHAR(255)", "description": "Hash du mot de passe"},
+        {"name": "name", "type": "VARCHAR(100)", "description": "Nom complet"},
+        {"name": "created_at", "type": "TIMESTAMP", "description": "Date de création du compte"},
+        {"name": "last_login", "type": "TIMESTAMP", "description": "Dernière connexion"},
+        {"name": "subscription_status", "type": "ENUM", "values": ["free", "premium", "trial"], "description": "Statut d'abonnement"},
+        {"name": "settings", "type": "JSON", "description": "Préférences utilisateur"}
+      ],
+      "indexes": [
+        {"name": "users_email_idx", "fields": ["email"], "type": "UNIQUE"}
+      ]
+    },
+    "Posts": {
+      "fields": [
+        {"name": "id", "type": "UUID", "primaryKey": true, "description": "Identifiant unique du post"},
+        {"name": "post_url", "type": "VARCHAR(255)", "description": "URL de la publication LinkedIn"},
+        {"name": "post_content", "type": "TEXT", "description": "Contenu extrait de la publication"},
+        {"name": "date_added", "type": "TIMESTAMP", "description": "Date d'ajout à la base de données"},
+        {"name": "comment_1", "type": "TEXT", "description": "Premier commentaire généré (Tech-savvy)"},
+        {"name": "comment_2", "type": "TEXT", "description": "Deuxième commentaire généré (Recruiter)"},
+        {"name": "comment_3", "type": "TEXT", "description": "Troisième commentaire généré (Peer)"},
+        {"name": "selected_comment", "type": "INTEGER", "description": "Index du commentaire sélectionné (1-3)"},
+        {"name": "status", "type": "ENUM", "values": ["pending", "commented", "skipped"], "description": "Statut du post"},
+        {"name": "engagement_metrics", "type": "JSON", "description": "Métriques d'engagement (likes, comments, etc.)"},
+        {"name": "user_id", "type": "UUID", "foreignKey": "Users.id", "description": "Référence à l'utilisateur"}
+      ],
+      "indexes": [
+        {"name": "posts_user_id_idx", "fields": ["user_id"]},
+        {"name": "posts_date_added_idx", "fields": ["date_added"]}
+      ]
+    },
+    "Agents": {
+      "fields": [
+        {"name": "id", "type": "UUID", "primaryKey": true, "description": "Identifiant unique de l'agent"},
+        {"name": "agent_name", "type": "VARCHAR(100)", "description": "Nom de l'agent/persona"},
+        {"name": "email", "type": "VARCHAR(255)", "description": "Email associé (optionnel)"},
+        {"name": "ip_proxy", "type": "VARCHAR(255)", "description": "Adresse IP du proxy (si utilisé)"},
+        {"name": "last_activity", "type": "TIMESTAMP", "description": "Dernière utilisation"},
+        {"name": "daily_comment_count", "type": "INTEGER", "description": "Nombre de commentaires aujourd'hui"},
+        {"name": "daily_limit", "type": "INTEGER", "description": "Limite quotidienne de commentaires"},
+        {"name": "user_id", "type": "UUID", "foreignKey": "Users.id", "description": "Référence à l'utilisateur"}
+      ],
+      "indexes": [
+        {"name": "agents_user_id_idx", "fields": ["user_id"]}
+      ]
+    },
+    "Community": {
+      "fields": [
+        {"name": "id", "type": "UUID", "primaryKey": true, "description": "Identifiant unique du contact"},
+        {"name": "name", "type": "VARCHAR(100)", "description": "Nom du contact"},
+        {"name": "linkedin_url", "type": "VARCHAR(255)", "description": "URL du profil LinkedIn"},
+        {"name": "interactions", "type": "INTEGER", "description": "Nombre d'interactions totales"},
+        {"name": "recent_post", "type": "VARCHAR(255)", "description": "URL de la publication la plus récente"},
+        {"name": "last_interaction_date", "type": "TIMESTAMP", "description": "Date de la dernière interaction"},
+        {"name": "engagement_score", "type": "FLOAT", "description": "Score d'engagement calculé"},
+        {"name": "notes", "type": "TEXT", "description": "Notes personnelles sur le contact"},
+        {"name": "category", "type": "VARCHAR(50)", "description": "Catégorie du contact"},
+        {"name": "user_id", "type": "UUID", "foreignKey": "Users.id", "description": "Référence à l'utilisateur"}
+      ],
+      "indexes": [
+        {"name": "community_user_id_idx", "fields": ["user_id"]},
+        {"name": "community_engagement_score_idx", "fields": ["engagement_score"]}
+      ]
+    },
+    "Analytics": {
+      "fields": [
+        {"name": "id", "type": "UUID", "primaryKey": true, "description": "Identifiant unique"},
+        {"name": "user_id", "type": "UUID", "foreignKey": "Users.id", "description": "Référence à l'utilisateur"},
+        {"name": "date", "type": "DATE", "description": "Date de l'analyse"},
+        {"name": "posts_boosted", "type": "INTEGER", "description": "Nombre de posts boostés"},
+        {"name": "comments_generated", "type": "INTEGER", "description": "Nombre de commentaires générés"},
+        {"name": "avg_engagement_rate", "type": "FLOAT", "description": "Taux d'engagement moyen"},
+        {"name": "top_performing_comment", "type": "TEXT", "description": "Commentaire le plus performant"},
+        {"name": "metrics", "type": "JSON", "description": "Métriques détaillées"}
+      ],
+      "indexes": [
+        {"name": "analytics_user_id_idx", "fields": ["user_id"]},
+        {"name": "analytics_date_idx", "fields": ["date"]}
+      ]
+    }
+  },
+  
+  "apiSpecifications": {
+    "baseUrl": "https://api.linkedinbooster.app/v1",
+    "authentication": "JWT via Authorization header",
+    "responseFormat": "JSON with standardized success/error structure",
+    "mainEndpoints": [
+      {
+        "path": "/auth",
+        "methods": ["POST /register", "POST /login", "POST /refresh-token", "POST /logout"],
+        "description": "Endpoints d'authentification et gestion des sessions"
+      },
+      {
+        "path": "/posts",
+        "methods": ["GET /", "POST /", "GET /:postId", "POST /:postId/comments/generate", "PUT /:postId/comments/select"],
+        "description": "Gestion des publications LinkedIn et génération de commentaires"
+      },
+      {
+        "path": "/community",
+        "methods": ["GET /", "POST /", "PUT /:contactId", "GET /suggestions"],
+        "description": "Gestion des contacts professionnels et suggestions d'interaction"
+      },
+      {
+        "path": "/agents",
+        "methods": ["GET /", "POST /", "PUT /:agentId", "DELETE /:agentId"],
+        "description": "Configuration et gestion des agents/personas"
+      },
+      {
+        "path": "/analytics",
+        "methods": ["GET /dashboard", "GET /reports", "GET /trends"],
+        "description": "Visualisation des statistiques et génération de rapports"
+      },
+      {
+        "path": "/explorer",
+        "methods": ["GET /posts"],
+        "description": "Découverte de publications pertinentes à commenter"
+      },
+      {
+        "path": "/settings",
+        "methods": ["GET /", "PUT /"],
+        "description": "Gestion des préférences utilisateur"
+      }
+    ]
+  },
+  
+  "technicalConsiderations": {
+    "security": {
+      "authentication": {
+        "approach": "JWT avec refresh tokens",
+        "storage": "HttpOnly cookies pour les tokens",
+        "features": ["2FA optionnel", "Déconnexion sur tous les appareils"]
+      },
+      "dataProtection": {
+        "encryption": "AES-256 pour les données sensibles au repos",
+        "transport": "TLS 1.3 pour toutes les communications",
+        "userData": "Conformité RGPD avec exports et suppression de données"
+      },
+      "apiSecurity": {
+        "rateLimit": "30 requêtes/minute par utilisateur",
+        "inputValidation": "Validation stricte via Joi/Zod",
+        "outputSanitization": "Protection contre les fuites de données sensibles"
+      }
+    },
+    "performance": {
+      "caching": {
+        "strategy": "Cache Redis pour les données fréquemment accédées",
+        "ttl": {
+          "userProfiles": "1 heure",
+          "postContent": "24 heures",
+          "generatedComments": "7 jours"
+        }
+      },
+      "optimization": {
+        "database": "Indexation optimisée pour les requêtes fréquentes",
+        "apiResponses": "Pagination et filtrage côté serveur",
+        "assets": "CDN pour les ressources statiques"
+      }
+    },
+    "scalability": {
+      "approach": "Horizontale via Kubernetes",
+      "bottlenecks": [
+        "Génération de commentaires IA (limité par l'API OpenAI)",
+        "Requêtes à LinkedIn (risque de blocage)"
+      ],
+      "solutions": [
+        "File d'attente pour les requêtes d'IA avec priorités",
+        "Système de rate-limiting intelligent pour LinkedIn"
+      ]
+    },
+    "linkedInCompliance": {
+      "challenges": [
+        "Extraction de contenu sans violation des conditions",
+        "Éviter la détection d'automatisation",
+        "Respecter les limites d'engagement"
+      ],
+      "approaches": [
+        "Pas d'automatisation complète, action utilisateur requise",
+        "Limites quotidiennes strictes par compte",
+        "Diversification des commentaires pour éviter les patterns"
+      ]
+    },
+    "aiEthics": {
+      "principles": [
+        "Transparence sur l'utilisation de l'IA",
+        "Contrôle humain sur le contenu généré",
+        "Prévention de l'utilisation abusive"
+      ],
+      "implementation": [
+        "Marqueurs optionnels pour les commentaires générés par IA",
+        "Filtres de contenu pour éviter les commentaires inappropriés",
+        "Système de feedback pour améliorer la pertinence"
+      ]
+    }
+  },
+  
+  "deploymentStrategy": {
+    "phases": [
+      {
+        "name": "MVP (Phase 1)",
+        "features": [
+          "Authentification utilisateur basique",
+          "Génération de commentaires pour URLs spécifiques",
+          "Tableau de bord simple",
+          "Stockage de l'historique des posts"
+        ],
+        "infrastructure": "Déploiement sur serveur unique avec Docker Compose",
+        "timeline": "4 semaines"
+      },
+      {
+        "name": "Expansion (Phase 2)",
+        "features": [
+          "Système complet d'exploration de posts",
+          "Gestion avancée de la communauté",
+          "Métriques d'engagement détaillées",
+          "Personnalisation des personas"
+        ],
+        "infrastructure": "Migration vers architecture microservices avec load balancing",
+        "timeline": "8 semaines après MVP"
+      },
+      {
+        "name": "Maturité (Phase 3)",
+        "features": [
+          "Intégration potentielle avec API LinkedIn (si autorisée)",
+          "Analyse prédictive d'engagement",
+          "Fonctionnalités collaboratives",
+          "Recommandations IA avancées"
+        ],
+        "infrastructure": "Déploiement multi-région avec haute disponibilité",
+        "timeline": "12 semaines après Phase 2"
+      }
+    ],
+    "cicd": {
+      "repository": "GitHub avec Actions",
+      "testing": {
+        "unit": "Jest pour le frontend et backend",
+        "integration": "Cypress pour les tests end-to-end",
+        "performance": "Lighthouse et k6 pour les tests de charge"
+      },
+      "environments": ["development", "staging", "production"],
+      "deploymentStrategy": "Blue-green pour minimiser les temps d'arrêt"
+    }
+  },
+  
+  "clarificationNeeded": [
+    {
+      "topic": "Intégration LinkedIn",
+      "question": "Le webhook mentionné pour le bouton 'Booster maintenant' implique-t-il une publication automatique sur LinkedIn ou simplement une copie du commentaire dans le presse-papiers?",
+      "impact": "Influence l'architecture d'intégration et les considérations de conformité"
+    },
+    {
+      "topic": "Extraction de contenu",
+      "question": "Quel mécanisme exact sera utilisé pour extraire le contenu d'un post LinkedIn? Une extension de navigateur ou une demande à l'utilisateur de copier-coller le contenu?",
+      "impact": "Détermine la nécessité de développer une extension de navigateur complémentaire"
+    },
+    {
+      "topic": "Limites d'utilisation",
+      "question": "Quelles limites d'utilisation précises devraient être imposées (nombre de commentaires générés par jour, par exemple)?",
+      "impact": "Influence la conception du système de quotas et la stratégie de monétisation"
+    },
+    {
+      "topic": "Authentification LinkedIn",
+      "question": "L'utilisateur doit-il connecter son compte LinkedIn à l'application?",
+      "impact": "Détermine si nous devons implémenter OAuth avec LinkedIn"
+    },
+    {
+      "topic": "Stockage à long terme",
+      "question": "Quelle est la politique de conservation des données (posts, commentaires, métriques)?",
+      "impact": "Influence les choix d'architecture de stockage et les mécanismes d'archivage"
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+classDiagram
+    class User {
+        +UUID id
+        +String email
+        +String passwordHash
+        +String name
+        +DateTime createdAt
+        +DateTime lastLogin
+        +SubscriptionStatus subscriptionStatus
+        +JSON settings
+        +register(email, password, name) User
+        +login(email, password) Token
+        +updateProfile(profileData) Boolean
+        +getSettings() JSON
+        +updateSettings(settings) Boolean
+    }
+
+    class Post {
+        +UUID id
+        +String postUrl
+        +String postContent
+        +DateTime dateAdded
+        +String comment1
+        +String comment2
+        +String comment3
+        +Integer selectedComment
+        +PostStatus status
+        +JSON engagementMetrics
+        +UUID userId
+        +create(postUrl, content, userId) Post
+        +generateComments(postContent) String[]
+        +selectComment(commentIndex) Boolean
+        +updateStatus(status) Boolean
+        +getEngagementMetrics() JSON
+    }
+
+    class Agent {
+        +UUID id
+        +String agentName
+        +String email
+        +String ipProxy
+        +DateTime lastActivity
+        +Integer dailyCommentCount
+        +Integer dailyLimit
+        +UUID userId
+        +create(agentName, userId) Agent
+        +updateDailyCount() Integer
+        +checkLimitReached() Boolean
+        +resetDailyCount() void
+        +logActivity() void
+    }
+
+    class Community {
+        +UUID id
+        +String name
+        +String linkedinUrl
+        +Integer interactions
+        +String recentPost
+        +DateTime lastInteractionDate
+        +Float engagementScore
+        +String notes
+        +String category
+        +UUID userId
+        +addContact(name, linkedinUrl, userId) Community
+        +updateInteraction(interactionType) void
+        +calculateEngagementScore() Float
+        +updateNotes(notes) Boolean
+        +getInteractionHistory() JSON
+    }
+
+    class Analytics {
+        +UUID id
+        +UUID userId
+        +Date date
+        +Integer postsBoosted
+        +Integer commentsGenerated
+        +Float avgEngagementRate
+        +String topPerformingComment
+        +JSON metrics
+        +createDailyRecord(userId) Analytics
+        +updatePostsCount(userId) void
+        +updateCommentsCount(userId) void
+        +calculateEngagementRate(userId) Float
+        +generateReport(userId, startDate, endDate) Report
+    }
+
+    class CommentGenerator {
+        -OpenAIClient aiClient
+        +generateComments(postContent) String[]
+        -createPrompt(postContent, persona) String
+        +adjustToneForPersona(persona, comment) String
+        -filterInappropriateContent(comment) Boolean
+        +rateCommentQuality(comment) Float
+    }
+
+    class AuthService {
+        +generateToken(user) Token
+        +verifyToken(token) User
+        +hashPassword(password) String
+        +comparePassword(password, hash) Boolean
+        +setupTwoFactorAuth(userId) TwoFactorSecret
+        +verifyTwoFactorCode(code, userId) Boolean
+    }
+
+    class PostService {
+        +extractPostContent(postUrl) String
+        +savePost(post) Post
+        +getPostsByUser(userId) Post[]
+        +getPostById(postId) Post
+        +getRecommendedPosts(userId) Post[]
+        +updatePostEngagementMetrics(postId, metrics) Boolean
+    }
+
+    class CommunityService {
+        +getContacts(userId) Community[]
+        +getSuggestedContacts(userId) Community[]
+        +calculateEngagementMetrics(userId) JSON
+        +getPriorityContacts(userId) Community[]
+        +suggestReengagement(userId) Community[]
+    }
+
+    class AnalyticsService {
+        +generateDashboardData(userId) Dashboard
+        +trackEvent(userId, eventType, metadata) void
+        +getEngagementTrends(userId, timeFrame) Trend[]
+        +exportAnalytics(userId, format) File
+    }
+
+    class LinkedInService {
+        +validatePostUrl(url) Boolean
+        +formatCommentForPosting(comment) String
+        +checkPostEngagement(postUrl) JSON
+        +getNetworkActivity(userId) Activity[]
+    }
+
+    User "1" -- "many" Post : creates
+    User "1" -- "many" Agent : owns
+    User "1" -- "many" Community : manages
+    User "1" -- "many" Analytics : has
+    Post -- CommentGenerator : uses
+    PostService -- Post : manages
+    CommunityService -- Community : manages
+    AnalyticsService -- Analytics : processes
+    CommentGenerator -- LinkedInService : validates with
+    AuthService -- User : authenticates
